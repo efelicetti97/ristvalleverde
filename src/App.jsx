@@ -29,7 +29,7 @@ function DraggableReservation({ reservation }) {
 
   let bg = '#fde68a';
 
-  if (reservation.accomodato) {
+  if (reservation.accommodated) {
     bg = '#86efac';
   }
 
@@ -116,6 +116,7 @@ export default function App() {
       ...form,
       date: selectedDate,
       note: form.note,
+      accommodated: false,
     };
 
  if (editingId !== null) {
@@ -151,40 +152,42 @@ export default function App() {
     });
   }
 
-  async function deleteReservation(id) {
-    await supabase
-  .from('reservations')
-  .update({
-    name: form.name,
-    people: Number(form.people),
-    tables: form.tables,
-    time: form.time,
-    date: selectedDate
-  })
-  .eq('id', editingId);
+ async function deleteReservation(id) {
 
-    setReservations(reservations.filter((r) => r.id !== id));
-  }
+  await supabase
+    .from('reservations')
+    .delete()
+    .eq('id', id);
 
-  async function toggleAccomodato(reservation) {
-    await supabase
-      .from('reservations')
-      .update({
-        accomodato: !reservation.accomodato,
-      })
-      .eq('id', reservation.id);
+  loadReservations();
 
-    setReservations(
-      reservations.map((r) =>
-        r.id === reservation.id
-          ? {
-              ...r,
-              accomodato: !r.accomodato,
-            }
-          : r
-      )
-    );
-  }
+  setReservations(
+    reservations.filter((r) => r.id !== id)
+  );
+}
+
+  async function toggleAccommodated(reservation) {
+
+  await supabase
+    .from('reservations')
+    .update({
+      accommodated: !reservation.accommodated,
+    })
+    .eq('id', reservation.id);
+
+  loadReservations();
+
+  setReservations(
+    reservations.map((r) =>
+      r.id === reservation.id
+        ? {
+            ...r,
+            accommodated: !r.accommodated,
+          }
+        : r
+    )
+  );
+}
 
   function exportBackup() {
     const data = JSON.stringify(reservations, null, 2);
@@ -386,14 +389,14 @@ function reservationsForCell(table, time) {
                 <td>{r.note}</td>
                 <td>{r.tables || '-'}</td>
                 <td>
-                  {r.accomodato
-                    ? 'Accomodato'
+                  {r.accommodated
+                    ? 'accommodated'
                     : 'In attesa'}
                 </td>
 
                 <td>
                   <button
-                    onClick={() => toggleAccomodato(r)}
+                    onClick={() => toggleAccommodated(r)}
                   >
                     Accomoda
                   </button>
