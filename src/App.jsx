@@ -109,17 +109,21 @@ export default function App() {
     }
   }
 
-  async function saveReservation() {
+   async function saveReservation() {
     if (!form.name || !form.people) return;
 
+    // Costruiamo il payload con i tipi di dati corretti per Supabase
     const payload = {
-      ...form,
+      name: form.name,
+      people: parseInt(form.people, 10), // Converte in numero (int4)
+      tables: form.tables || null,       // Mantiene testo (es. "10,11") o mette null se vuoto
+      time: form.time,
+      note: form.note || null,           // Testo o null se vuoto
       date: selectedDate,
-      note: form.note,
-      accommodated: false,
     };
 
- if (editingId !== null) {
+    if (editingId !== null) {
+      // In fase di modifica NON inviamo 'accommodated: false' per non resettare lo stato
       await supabase
         .from('reservations')
         .update(payload)
@@ -131,18 +135,25 @@ export default function App() {
         )
       );
     } else {
-      const { data } = await supabase
+      // In fase di inserimento aggiungiamo lo stato iniziale
+      const payloadNuovo = { ...payload, accommodated: false };
+
+      const { data, error } = await supabase
         .from('reservations')
-        .insert([payload])
+        .insert([payloadNuovo])
         .select();
 
-      if (data) {
+      if (error) {
+        console.error("Errore Supabase:", error.message);
+        return;
+      }
+
+      if (data && data[0]) {
         setReservations([...reservations, data[0]]);
       }
     }
 
     setEditingId(null);
-
     setForm({
       name: '',
       people: '',
