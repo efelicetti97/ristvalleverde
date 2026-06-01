@@ -540,7 +540,7 @@ function reservationsForCell(table, time) {
 
             <tbody>
               {tables.map((table) => (
-                <tr key={table} className={r.accomodated || r.accommodated ? "accommodated" : ""}>
+                <tr key={table}>
                   <td>
                     <strong>{table}</strong>
                   </td>
