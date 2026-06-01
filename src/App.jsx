@@ -204,7 +204,7 @@ function App_Internal() {
         .eq('id', editingId);
 
       setReservations(
-        reservations.map((reservation) => =>
+        reservations.map((r) =>
           r.id === editingId ? { ...r, ...payload } : r
         )
       );
@@ -256,14 +256,14 @@ function App_Internal() {
   await supabase
     .from('reservations')
     .update({
-      accommodated: !reservation.accommodated,
+      accommodated: !r.accommodated,
     })
     .eq('id', reservation.id);
 
   loadReservations();
 
   setReservations(
-    reservations.map((reservation) => =>
+    reservations.map((r) =>
       r.id === reservation.id
         ? {
             ...r,
@@ -307,7 +307,7 @@ function App_Internal() {
       .eq('id', reservationId);
 
     setReservations(
-      reservations.map((reservation) => =>
+      reservations.map((r) =>
         r.id === reservationId
           ? {
               ...r,
