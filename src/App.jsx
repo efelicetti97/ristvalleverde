@@ -204,7 +204,7 @@ function App_Internal() {
         .eq('id', editingId);
 
       setReservations(
-        reservations.map((r) =>
+        reservations.map((reservation) => =>
           r.id === editingId ? { ...r, ...payload } : r
         )
       );
@@ -263,7 +263,7 @@ function App_Internal() {
   loadReservations();
 
   setReservations(
-    reservations.map((r) =>
+    reservations.map((reservation) => =>
       r.id === reservation.id
         ? {
             ...r,
@@ -307,7 +307,7 @@ function App_Internal() {
       .eq('id', reservationId);
 
     setReservations(
-      reservations.map((r) =>
+      reservations.map((reservation) => =>
         r.id === reservationId
           ? {
               ...r,
@@ -473,7 +473,7 @@ function reservationsForCell(table, time) {
           ))}
         </tr>
             {filteredReservations.map((r) => (
-              <tr key={r.id} className={r.accomodated || r.accommodated ? "accommodated" : ""}>
+              <tr key={r.id} className={(reservation?.accomodated || reservation?.accommodated || r.accommodated ? "accommodated" : ""}>
                 <td>{r.time}</td>
                 <td>{r.name}</td>
                 <td>{r.people}</td>
@@ -540,7 +540,7 @@ function reservationsForCell(table, time) {
 
             <tbody>
               {tables.map((table) => (
-                <tr key={table} className={r.accomodated || r.accommodated ? "accommodated" : ""}>
+                <tr key={table} className={(reservation?.accomodated || reservation?.accommodated || r.accommodated ? "accommodated" : ""}>
                   <td>
                     <strong>{table}</strong>
                   </td>
