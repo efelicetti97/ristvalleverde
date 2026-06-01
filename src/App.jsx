@@ -1,13 +1,91 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { DndContext, useDraggable, useDroppable } from '@dnd-kit/core';
+
+
+function PasswordGate({ children }) {
+  const [authenticated, setAuthenticated] = useState(false);
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  
+  useEffect(() => {
+    if (sessionStorage.getItem('sottosassa_auth') === 'true') {
+      setAuthenticated(true);
+    }
+  }, []);
+  
+  const handleLogin = (e) => {
+    e.preventDefault();
+    if (password === 'sottosassa') {
+      sessionStorage.setItem('sottosassa_auth', 'true');
+      setAuthenticated(true);
+      setError('');
+    } else {
+      setError('Password errata');
+    }
+  };
+  
+  if (!authenticated) {
+    return (
+      <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#f5f5f5'}}>
+        <form onSubmit={handleLogin} style={{backgroundColor: 'white', padding: '40px', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)'}}>
+          <h2 style={{marginBottom: '20px'}}>Accesso Ristorante</h2>
+          <input 
+            type="password" 
+            value={password} 
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Inserisci password"
+            style={{width: '100%', padding: '10px', marginBottom: '10px', border: '1px solid #ddd', borderRadius: '4px'}}
+            autoFocus
+          />
+          {error && <p style={{color: 'red', marginBottom: '10px'}}>{error}</p>}
+          <button type="submit" style={{width: '100%', padding: '10px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer'}}>
+            Entra
+          </button>
+        </form>
+      </div>
+    );
+  }
+  
+  return children;
+}
 
 const supabaseUrl = 'https://jturyhlrmmqarbbjulev.supabase.co';
 const supabaseKey = 'sb_publishable_S6ELxV6XfMkKkfNTwwFy_Q_fFdBF6oI';
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+const styles = `
+  .table-container {
+    overflow: auto;
+    max-height: 80vh;
+    position: relative;
+  }
+  .sticky-header {
+    position: sticky;
+    top: 0;
+    background: white;
+    z-index: 10;
+  }
+  .sticky-col {
+    position: sticky;
+    left: 0;
+    background: white;
+    z-index: 5;
+  }
+  .accommodated {
+    text-decoration: line-through;
+    background-color: #d4edda !important;
+    color: #155724;
+  }
+  .time-totals {
+    background-color: #f8f9fa;
+    font-weight: bold;
+  }
+`;
+
+
 const times = [
+  '12:00','12:15','12:30','12:45','13:00','13:15','13:30','13:45','14:00',
   '18:00','18:15','18:30','18:45',
   '19:00','19:15','19:30','19:45',
   '20:00','20:15','20:30','20:45',
@@ -77,8 +155,14 @@ function Cell({ id, children }) {
   );
 }
 
-export default function App() {
+function App_Internal() {
   const [reservations, setReservations] = useState([]);
+
+  // Calcola coperti ogni 15 minuti
+  const getCoversByTime = (time) => {
+    return reservations.filter(r => r.time === time && !r.deleted && !r.accomodated).reduce((sum, r) => sum + (r.covers || r.persone || 0), 0);
+  };
+
   const [selectedDate, setSelectedDate] = useState(
     new Date().toISOString().split('T')[0]
   );
@@ -381,19 +465,25 @@ function reservationsForCell(table, time) {
         <table width="100%" border="1">
           <thead>
             <tr>
-              <th>Ora</th>
-              <th>Nome</th>
-              <th>Persone</th>
-              <th>Note</th>
-              <th>Tavoli</th>
-              <th>Stato</th>
-              <th>Azioni</th>
+              <th className="sticky-col sticky-header">Ora</th>
+              <th className="sticky-header">Nome</th>
+              <th className="sticky-header">Persone</th>
+              <th className="sticky-header">Note</th>
+              <th className="sticky-header">Tavoli</th>
+              <th className="sticky-header">Stato</th>
+              <th className="sticky-header">Azioni</th>
             </tr>
           </thead>
 
           <tbody>
+        <tr className="time-totals">
+          <td className="sticky-col"><strong>Coperti</strong></td>
+          {times.map(time => (
+            <td key={`tot-${time}`}>{getCoversByTime(time)}</td>
+          ))}
+        </tr>
             {filteredReservations.map((r) => (
-              <tr key={r.id}>
+              <tr key={r.id} className={r.accomodated || r.accommodated ? "accommodated" : ""}>
                 <td>{r.time}</td>
                 <td>{r.name}</td>
                 <td>{r.people}</td>
@@ -450,7 +540,7 @@ function reservationsForCell(table, time) {
           <table>
             <thead>
               <tr>
-                <th>Tavolo</th>
+                <th className="sticky-header">Tavolo</th>
 
                 {times.map((time) => (
                   <th key={time}>{time}</th>
@@ -460,7 +550,7 @@ function reservationsForCell(table, time) {
 
             <tbody>
               {tables.map((table) => (
-                <tr key={table}>
+                <tr key={table} className={r.accomodated || r.accommodated ? "accommodated" : ""}>
                   <td>
                     <strong>{table}</strong>
                   </td>
@@ -493,4 +583,9 @@ function reservationsForCell(table, time) {
       </DndContext>
     </div>
   );
+}
+
+
+export default function App() {
+  return <PasswordGate><App_Internal /></PasswordGate>;
 }
