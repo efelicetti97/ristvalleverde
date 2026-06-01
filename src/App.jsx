@@ -95,10 +95,6 @@ const times = [
 const tables = Array.from({ length: 50 }, (_, i) => i + 1);
 
 function DraggableReservation({ reservation }) {
-  const { attributes, listeners, setNodeRef, transform } = useDraggable({
-    id: reservation.id,
-  });
-
   const style = transform
     ? {
         transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
@@ -117,7 +113,6 @@ function DraggableReservation({ reservation }) {
 
   return (
     <div
-      ref={setNodeRef}
       style={{
         ...style,
         background: bg,
@@ -126,8 +121,6 @@ function DraggableReservation({ reservation }) {
         marginBottom: 4,
         fontSize: 12,
       }}
-      {...listeners}
-      {...attributes}
     >
       <strong>{reservation.name}</strong>
       <div>{reservation.people} persone</div>
@@ -136,11 +129,8 @@ function DraggableReservation({ reservation }) {
 }
 
 function Cell({ id, children }) {
-  const { setNodeRef } = useDroppable({ id });
-
   return (
     <td
-      ref={setNodeRef}
       style={{
         border: '1px solid #ddd',
         minWidth: 120,
@@ -528,7 +518,7 @@ function reservationsForCell(table, time) {
         </table>
       </div>
 
-      <DndContext onDragEnd={handleDragEnd}>
+      
         <div
           style={{
             overflowX: 'auto',
@@ -580,7 +570,7 @@ function reservationsForCell(table, time) {
             </tbody>
           </table>
         </div>
-      </DndContext>
+      
     </div>
   );
 }
