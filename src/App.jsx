@@ -1,239 +1,436 @@
-import { useState, useEffect } from 'react'
-import { createClient } from '@supabase/supabase-js'
-import './App.css'
+import { useEffect, useState } from 'react';
+import { createClient } from '@supabase/supabase-js';
+import { DndContext, useDraggable, useDroppable } from '@dnd-kit/core';
 
-const SUPABASE_URL = 'https://xpxhtnqwpgkyuwptgnmq.supabase.co'
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhweGh0bnF3cGdreXV3cHRnbm1xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc4NDI2MjEsImV4cCI6MjA2MzQxODYyMX0._wIVLwErR9MYWGZkEn9yCQUxHnc3wQhy7kFbE_9fz9M'
+const supabaseUrl = 'https://jturyhlrmmqarbbjulev.supabase.co';
+const supabaseKey = 'sb_publishable_S6ELxV6XfMkKkfNTwwFy_Q_fFdBF6oI';
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
+const supabase = createClient(supabaseUrl, supabaseKey);
 
-console.log('Test Supabase URL:', SUPABASE_URL) // deve stampare l'url
+const times = [
+  '18:00','18:15','18:30','18:45',
+  '19:00','19:15','19:30','19:45',
+  '20:00','20:15','20:30','20:45',
+  '21:00','21:15','21:30','21:45'
+];
 
-function App() {
-  const [reservations, setReservations] = useState([])
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
-  const [editingId, setEditingId] = useState(null)
-  const [formData, setFormData] = useState({
-    name: '',
-    people: '',
-    time: '',
-    tables: '',
-    note: '',
-    phone: ''
-  })
+const tables = Array.from({ length: 50 }, (_, i) => i + 1);
 
-  const times = ['12:00', '12:15', '12:30', '12:45', '13:00', '13:15', '13:30', '13:45', '14:00', '14:15', '14:30', '18:00', '18:15', '18:30', '18:45', '19:00', '19:15', '19:30', '19:45', '20:00', '20:15', '20:30', '20:45', '21:00', '21:15', '21:30']
+function DraggableReservation({ reservation }) {
+  const { attributes, listeners, setNodeRef, transform } = useDraggable({
+    id: reservation.id,
+  });
 
-  // ORDINE TAVOLI: 1-19, 40-49, 30-39, 50-53, 20-29
-  const tables = [
-    1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,
-    40,41,42,43,44,45,46,47,48,49,
-    30,31,32,33,34,35,36,37,38,39,
-    50,51,52,53,
-    20,21,22,23,24,25,26,27,28,29
-  ]
+  const style = transform
+    ? {
+        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+      }
+    : undefined;
 
-  useEffect(() => {
-    fetchReservations()
-  }, [selectedDate])
+  let bg = '#fde68a';
 
-  async function fetchReservations() {
-    const { data, error } = await supabase
-  .from('reservations')
-  .select('*')
-  .eq('date', selectedDate)
-  .eq('deleted', false)
-  .order('time')
-
-    if (error) console.error(error)
-    else setReservations(data || [])
+  if (reservation.accommodated) {
+    bg = '#86efac';
   }
 
-  function getArrivalsAtTime(time) {
-    return reservations
-  .filter(r => r.time === time)
-  .reduce((sum, r) => sum + r.people, 0)
-  }
-
-  async function addReservation() {
-    if (!formData.name ||!formData.people ||!formData.time) {
-      alert('Compila nome, persone e orario')
-      return
-    }
-
-    const { error } = await supabase
-  .from('reservations')
-  .insert([{
-        date: selectedDate,
-        name: formData.name,
-        people: parseInt(formData.people),
-        time: formData.time,
-        tables: formData.tables,
-        note: formData.note,
-        phone: formData.phone,
-        accommodated: false,
-        deleted: false,
-        confirmed: false
-      }])
-
-    if (error) alert(error.message)
-    else {
-      setFormData({ name: '', people: '', time: '', tables: '', note: '', phone: '' })
-      fetchReservations()
-    }
-  }
-
-  async function toggleAccommodated(id, current) {
-    const { error } = await supabase
-  .from('reservations')
-  .update({ accommodated:!current })
-  .eq('id', id)
-
-    if (!error) fetchReservations()
-  }
-
-  async function deleteReservation(id, name, time) {
-    if (window.confirm(`Vuoi davvero eliminare la prenotazione di ${name} alle ${time}?`)) {
-      const { error } = await supabase
-    .from('reservations')
-    .update({ deleted: true })
-    .eq('id', id)
-
-      if (!error) fetchReservations()
-    }
-  }
-
-  function startEdit(r) {
-    setEditingId(r.id)
-    setFormData({
-      name: r.name,
-      people: r.people,
-      time: r.time,
-      tables: r.tables,
-      note: r.note,
-      phone: r.phone || ''
-    })
-  }
-
-  async function saveEdit() {
-    const { error } = await supabase
-  .from('reservations')
-  .update({
-        name: formData.name,
-        people: parseInt(formData.people),
-        time: formData.time,
-        tables: formData.tables,
-        note: formData.note,
-        phone: formData.phone
-      })
-  .eq('id', editingId)
-
-    if (!error) {
-      setEditingId(null)
-      setFormData({ name: '', people: '', time: '', tables: '', note: '', phone: '' })
-      fetchReservations()
-    }
-  }
-
-  function reservationsForCell(table, time) {
-    return reservations.filter(r => {
-      const reservationTables = r.tables? r.tables.split(',').map(t => t.trim()) : []
-      if (!reservationTables.includes(String(table))) return false
-
-      const startIndex = times.indexOf(r.time)
-      const currentIndex = times.indexOf(time)
-      const DURATION_SLOTS = 6
-
-      return currentIndex >= startIndex && currentIndex < startIndex + DURATION_SLOTS
-    })
+  if (Number(reservation.people) >= 6) {
+    bg = '#fca5a5';
   }
 
   return (
-    <div className="app">
-      <h1>Prenotazioni Ristorante</h1>
+    <div
+      ref={setNodeRef}
+      style={{
+        ...style,
+        background: bg,
+        padding: 6,
+        borderRadius: 6,
+        marginBottom: 4,
+        fontSize: 12,
+      }}
+      {...listeners}
+      {...attributes}
+    >
+      <strong>{reservation.name}</strong>
+      <div>{reservation.people} persone</div>
+    </div>
+  );
+}
 
-      <div className="date-picker">
-        <input
-          type="date"
-          value={selectedDate}
-          onChange={e => setSelectedDate(e.target.value)}
-        />
-      </div>
+function Cell({ id, children }) {
+  const { setNodeRef } = useDroppable({ id });
 
-      <div className="form">
-        <h3>{editingId? 'Modifica' : 'Nuova'} Prenotazione</h3>
-        <input
-          placeholder="Nome"
-          value={formData.name}
-          onChange={e => setFormData({...formData, name: e.target.value })}
-        />
-        <input
-          type="number"
-          placeholder="Persone"
-          value={formData.people}
-          onChange={e => setFormData({...formData, people: e.target.value })}
-        />
-        <input
-          placeholder="Telefono"
-          value={formData.phone}
-          onChange={e => setFormData({...formData, phone: e.target.value })}
-        />
-        <select
-          value={formData.time}
-          onChange={e => setFormData({...formData, time: e.target.value })}
+  return (
+    <td
+      ref={setNodeRef}
+      style={{
+        border: '1px solid #ddd',
+        minWidth: 120,
+        height: 90,
+        verticalAlign: 'top',
+        padding: 4,
+        background: '#fff',
+      }}
+    >
+      {children}
+    </td>
+  );
+}
+
+export default function App() {
+  const [reservations, setReservations] = useState([]);
+  const [selectedDate, setSelectedDate] = useState(
+    new Date().toISOString().split('T')[0]
+  );
+
+  const [editingId, setEditingId] = useState(null);
+
+  const [form, setForm] = useState({
+    name: '',
+    people: '',
+    tables: '',
+    time: '18:00',
+    note: '',
+  });
+
+  useEffect(() => {
+    loadReservations();
+  }, []);
+
+  async function loadReservations() {
+    const { data } = await supabase
+      .from('reservations')
+      .select('*')
+      .order('date')
+      .order('time');
+
+    if (data) {
+      setReservations(data);
+    }
+  }
+
+   async function saveReservation() {
+    if (!form.name || !form.people) return;
+
+    // Costruiamo il payload con i tipi di dati corretti per Supabase
+    const payload = {
+      name: form.name,
+      people: parseInt(form.people, 10), // Converte in numero (int4)
+      tables: form.tables || null,       // Mantiene testo (es. "10,11") o mette null se vuoto
+      time: form.time,
+      note: form.note || null,           // Testo o null se vuoto
+      date: selectedDate,
+    };
+
+    if (editingId !== null) {
+      // In fase di modifica NON inviamo 'accommodated: false' per non resettare lo stato
+      await supabase
+        .from('reservations')
+        .update(payload)
+        .eq('id', editingId);
+
+      setReservations(
+        reservations.map((r) =>
+          r.id === editingId ? { ...r, ...payload } : r
+        )
+      );
+    } else {
+      // In fase di inserimento aggiungiamo lo stato iniziale
+      const payloadNuovo = { ...payload, accommodated: false };
+
+      const { data, error } = await supabase
+        .from('reservations')
+        .insert([payloadNuovo])
+        .select();
+
+      if (error) {
+        console.error("Errore Supabase:", error.message);
+        return;
+      }
+
+      if (data && data[0]) {
+        setReservations([...reservations, data[0]]);
+      }
+    }
+
+    setEditingId(null);
+    setForm({
+      name: '',
+      people: '',
+      tables: '',
+      time: '18:00',
+      note: '',
+    });
+  }
+
+ async function deleteReservation(id) {
+
+  await supabase
+    .from('reservations')
+    .delete()
+    .eq('id', id);
+
+  loadReservations();
+
+  setReservations(
+    reservations.filter((r) => r.id !== id)
+  );
+}
+
+  async function toggleAccommodated(reservation) {
+
+  await supabase
+    .from('reservations')
+    .update({
+      accommodated: !reservation.accommodated,
+    })
+    .eq('id', reservation.id);
+
+  loadReservations();
+
+  setReservations(
+    reservations.map((r) =>
+      r.id === reservation.id
+        ? {
+            ...r,
+            accommodated: !r.accommodated,
+          }
+        : r
+    )
+  );
+}
+
+  function exportBackup() {
+    const data = JSON.stringify(reservations, null, 2);
+
+    const blob = new Blob([data], {
+      type: 'application/json',
+    });
+
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'backup-prenotazioni.json';
+    a.click();
+  }
+
+  async function handleDragEnd(event) {
+    const { active, over } = event;
+
+    if (!over) return;
+
+    const reservationId = active.id;
+
+    const [table, time] = over.id.split('|');
+
+    await supabase
+      .from('reservations')
+      .update({
+        tables: table,
+        time,
+      })
+      .eq('id', reservationId);
+
+    setReservations(
+      reservations.map((r) =>
+        r.id === reservationId
+          ? {
+              ...r,
+              tables: table,
+              time,
+            }
+          : r
+      )
+    );
+  }
+
+  const filteredReservations = reservations.filter(
+    (r) => r.date === selectedDate
+  );
+
+  const totalPeople = filteredReservations.reduce(
+    (sum, r) => sum + Number(r.people || 0),
+    0
+  );
+
+function reservationsForCell(table, time) {
+  return filteredReservations.filter((r) => {
+
+    const reservationTables = r.tables
+      ? r.tables.split(',').map((t) => t.trim())
+      : [];
+
+    if (!reservationTables.includes(String(table))) {
+      return false;
+    }
+
+    const startIndex = times.indexOf(r.time);
+    const currentIndex = times.indexOf(time);
+
+    return (
+      currentIndex >= startIndex &&
+      currentIndex < startIndex + 6
+    );
+  });
+}
+
+  return (
+    <div style={{ padding: 20 }}>
+      <h1>Agenda Prenotazioni</h1>
+
+      <div
+        style={{
+          background: '#fff',
+          padding: 20,
+          borderRadius: 10,
+          marginBottom: 20,
+        }}
+      >
+        <div style={{ marginBottom: 10 }}>
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+          />
+        </div>
+
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(5,1fr)',
+            gap: 10,
+          }}
         >
-          <option value="">Orario</option>
-          {times.map(t => <option key={t} value={t}>{t}</option>)}
-        </select>
-        <input
-          placeholder="Tavoli es: 1,42,51"
-          value={formData.tables}
-          onChange={e => setFormData({...formData, tables: e.target.value })}
-        />
-        <input
-          placeholder="Note"
-          value={formData.note}
-          onChange={e => setFormData({...formData, note: e.target.value })}
-        />
-        {editingId? (
-          <>
-            <button onClick={saveEdit}>Salva</button>
-            <button onClick={() => setEditingId(null)}>Annulla</button>
-          </>
-        ) : (
-          <button onClick={addReservation}>Aggiungi</button>
-        )}
+          <input
+            placeholder="Nome"
+            value={form.name}
+            onChange={(e) =>
+              setForm({ ...form, name: e.target.value })
+            }
+          />
+
+          <input
+            type="number"
+            placeholder="Persone"
+            value={form.people}
+            onChange={(e) =>
+              setForm({ ...form, people: e.target.value })
+            }
+          />
+
+          <input
+            placeholder="Tavoli es. 10,11"
+            value={form.tables}
+            onChange={(e) =>
+              setForm({ ...form, tables: e.target.value })
+            }
+          />
+  <input
+  placeholder="Note"
+  value={form.note}
+  onChange={(e) =>
+    setForm({ ...form, note: e.target.value })
+  }
+/>
+          <select
+            value={form.time}
+            onChange={(e) =>
+              setForm({ ...form, time: e.target.value })
+            }
+          >
+            {times.map((t) => (
+              <option key={t}>{t}</option>
+            ))}
+          </select>
+
+          <button onClick={saveReservation}>
+            {editingId ? 'Salva' : 'Aggiungi'}
+          </button>
+        </div>
       </div>
 
-      <div className="reservations-list">
-        <h3>Lista Prenotazioni {selectedDate}</h3>
-        <table>
+      <div
+        style={{
+          background: '#fff',
+          padding: 20,
+          borderRadius: 10,
+          marginBottom: 20,
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            marginBottom: 10,
+          }}
+        >
+          <div>
+            Prenotazioni: {filteredReservations.length}
+          </div>
+
+          <div>
+            Coperti: {totalPeople}
+          </div>
+
+          <button onClick={exportBackup}>
+            Backup
+          </button>
+        </div>
+
+        <table width="100%" border="1">
           <thead>
             <tr>
-              <th>Orario</th>
+              <th>Ora</th>
               <th>Nome</th>
               <th>Persone</th>
-              <th>Tel</th>
-              <th>Tavoli</th>
               <th>Note</th>
+              <th>Tavoli</th>
+              <th>Stato</th>
               <th>Azioni</th>
             </tr>
           </thead>
+
           <tbody>
-            {reservations.map(r => (
-              <tr key={r.id} className={r.accommodated? 'accommodated' : ''}>
+            {filteredReservations.map((r) => (
+              <tr key={r.id}>
                 <td>{r.time}</td>
                 <td>{r.name}</td>
                 <td>{r.people}</td>
-                <td>{r.phone || '-'}</td>
-                <td>{r.tables || '-'}</td>
                 <td>{r.note}</td>
+                <td>{r.tables || '-'}</td>
                 <td>
-                  <button onClick={() => toggleAccommodated(r.id, r.accommodated)}>
-                    {r.accommodated? 'Libera' : 'Accomoda'}
+                  {r.accommodated
+                    ? 'accommodated'
+                    : 'In attesa'}
+                </td>
+
+                <td>
+                  <button
+                    onClick={() => toggleAccommodated(r)}
+                  >
+                    Accomoda
                   </button>
-                  <button onClick={() => startEdit(r)}>Modifica</button>
-                  <button onClick={() => deleteReservation(r.id, r.name, r.time)}>Elimina</button>
+
+                  <button
+                    onClick={() => {
+                      setEditingId(r.id);
+                      setForm({
+                        name: r.name,
+                        people: r.people,
+                        tables: r.tables,
+                        time: r.time,
+                      });
+                    }}
+                  >
+                    Modifica
+                  </button>
+
+                  <button
+                    onClick={() => deleteReservation(r.id)}
+                  >
+                    Elimina
+                  </button>
                 </td>
               </tr>
             ))}
@@ -241,46 +438,59 @@ function App() {
         </table>
       </div>
 
-      <div className="grid">
-        <h3>Griglia Tavoli</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>Tavolo</th>
-              {times.map(time => <th key={time}>{time}</th>)}
-            </tr>
-            <tr className="arrivals-row">
-              <td><strong>Arrivi</strong></td>
-              {times.map(time => (
-                <td key={time}>
-                  <strong>{getArrivalsAtTime(time)}</strong>
-                </td>
+      <DndContext onDragEnd={handleDragEnd}>
+        <div
+          style={{
+            overflowX: 'auto',
+            background: '#fff',
+            padding: 20,
+            borderRadius: 10,
+          }}
+        >
+          <table>
+            <thead>
+              <tr>
+                <th>Tavolo</th>
+
+                {times.map((time) => (
+                  <th key={time}>{time}</th>
+                ))}
+              </tr>
+            </thead>
+
+            <tbody>
+              {tables.map((table) => (
+                <tr key={table}>
+                  <td>
+                    <strong>{table}</strong>
+                  </td>
+
+                  {times.map((time) => {
+                    const cellReservations = reservationsForCell(
+                      table,
+                      time
+                    );
+
+                    return (
+                      <Cell
+                        key={`${table}-${time}`}
+                        id={`${table}|${time}`}
+                      >
+                        {cellReservations.map((reservation) => (
+                          <DraggableReservation
+                            key={reservation.id}
+                            reservation={reservation}
+                          />
+                        ))}
+                      </Cell>
+                    );
+                  })}
+                </tr>
               ))}
-            </tr>
-          </thead>
-          <tbody>
-            {tables.map(table => (
-              <tr key={table}>
-                <td><strong>{table}</strong></td>
-                {times.map(time => {
-                  const cellReservations = reservationsForCell(table, time)
-                  return (
-                    <td key={time} className={cellReservations.length? 'occupied' : ''}>
-                      {cellReservations.map(r => (
-                        <div key={r.id} className="reservation-card">
-                          {r.name} - {r.people}p
-                        </div>
-                      ))}
-                    </td>
-                  )
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </tbody>
+          </table>
+        </div>
+      </DndContext>
     </div>
-  )
+  );
 }
-
-export default App
