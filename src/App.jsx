@@ -2,13 +2,13 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import './App.css'
 
-// Chiavi dirette così non serve Vercel env
+// Chiavi dirette
 const supabase = createClient(
   'https://xpxhtnqwpgkyuwptgnmq.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhweGh0bnF3cGdreXV3cHRnbm1xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc4NDI2MjEsImV4cCI6MjA2MzQxODYyMX0._wIVLwErR9MYWGZkEn9yCQUxHnc3wQhy7kFbE_9fz9M'
 )
 
-// CAMBIA QUESTA PASSWORD
+// CAMBIA PASSWORD QUI
 const APP_PASSWORD = 'sottosassa'
 
 function App() {
@@ -26,7 +26,6 @@ function App() {
 
   const tavoliDisponibili = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
 
-  // Controlla se già loggato
   useEffect(() => {
     const salvata = localStorage.getItem('login_prenotazioni')
     if (salvata === 'ok') setAutenticato(true)
@@ -49,7 +48,6 @@ function App() {
     setPassword('')
   }
 
-  // Carica prenotazioni
   useEffect(() => {
     if (!autenticato) return
     fetchPrenotazioni()
@@ -58,10 +56,10 @@ function App() {
   const fetchPrenotazioni = async () => {
     setLoading(true)
     const { data: dati, error } = await supabase
-     .from('reservations')
-     .select('*')
-     .eq('data', data)
-     .order('tavolo', { ascending: true })
+    .from('reservations')
+    .select('*')
+    .eq('data', data)
+    .order('tavolo', { ascending: true })
 
     if (error) {
       console.error(error)
@@ -77,8 +75,8 @@ function App() {
     if (!nome ||!persone ||!tavolo) return
 
     const { error } = await supabase
-     .from('reservations')
-     .insert([{
+    .from('reservations')
+    .insert([{
         nome,
         persone: parseInt(persone),
         tavolo: parseInt(tavolo),
@@ -99,15 +97,14 @@ function App() {
 
   const segnaArrivato = async (id, arrivato) => {
     const { error } = await supabase
-     .from('reservations')
-     .update({ arrivato:!arrivato })
-     .eq('id', id)
+    .from('reservations')
+    .update({ arrivato:!arrivato })
+    .eq('id', id)
 
     if (error) alert('Errore: ' + error.message)
     else fetchPrenotazioni()
   }
 
-  // Schermata login
   if (!autenticato) {
     return (
       <div className="container">
@@ -129,7 +126,6 @@ function App() {
     )
   }
 
-  // App principale
   return (
     <div className="container">
       <header>
