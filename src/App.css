@@ -1,301 +1,184 @@
-* {
-  margin: 0;
+.counter {
+  font-size: 16px;
+  padding: 5px 10px;
+  border-radius: 5px;
+  color: var(--accent);
+  background: var(--accent-bg);
+  border: 2px solid transparent;
+  transition: border-color 0.3s;
+  margin-bottom: 24px;
+
+  &:hover {
+    border-color: var(--accent-border);
+  }
+  &:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+}
+
+.hero {
+  position: relative;
+
+  .base,
+  .framework,
+  .vite {
+    inset-inline: 0;
+    margin: 0 auto;
+  }
+
+  .base {
+    width: 170px;
+    position: relative;
+    z-index: 0;
+  }
+
+  .framework,
+  .vite {
+    position: absolute;
+  }
+
+  .framework {
+    z-index: 1;
+    top: 34px;
+    height: 28px;
+    transform: perspective(2000px) rotateZ(300deg) rotateX(44deg) rotateY(39deg)
+      scale(1.4);
+  }
+
+  .vite {
+    z-index: 0;
+    top: 107px;
+    height: 26px;
+    width: auto;
+    transform: perspective(2000px) rotateZ(300deg) rotateX(40deg) rotateY(39deg)
+      scale(0.8);
+  }
+}
+
+#center {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+  place-content: center;
+  place-items: center;
+  flex-grow: 1;
+
+  @media (max-width: 1024px) {
+    padding: 32px 20px 24px;
+    gap: 18px;
+  }
+}
+
+#next-steps {
+  display: flex;
+  border-top: 1px solid var(--border);
+  text-align: left;
+
+  & > div {
+    flex: 1 1 0;
+    padding: 32px;
+    @media (max-width: 1024px) {
+      padding: 24px 20px;
+    }
+  }
+
+  .icon {
+    margin-bottom: 16px;
+    width: 22px;
+    height: 22px;
+  }
+
+  @media (max-width: 1024px) {
+    flex-direction: column;
+    text-align: center;
+  }
+}
+
+#docs {
+  border-right: 1px solid var(--border);
+
+  @media (max-width: 1024px) {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+}
+
+#next-steps ul {
+  list-style: none;
   padding: 0;
-  box-sizing: border-box;
-}
-
-body {
-  font-family: system-ui, -apple-system, sans-serif;
-  background: #f9fafb;
-  color: #111827;
-}
-
-.container {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 20px;
-}
-
-/* LOGIN */
-.login-box {
-  max-width: 360px;
-  margin: 120px auto;
-  padding: 40px;
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.06);
-  text-align: center;
-}
-
-.login-box h1 {
-  margin-bottom: 24px;
-  font-size: 24px;
-  color: #111827;
-}
-
-.login-box input {
-  width: 100%;
-  padding: 14px;
-  margin: 12px 0;
-  border: 2px solid #e5e7eb;
-  border-radius: 8px;
-  font-size: 16px;
-  transition: border 0.2s;
-}
-
-.login-box input:focus {
-  outline: none;
-  border-color: #2563eb;
-}
-
-.login-box input.errore {
-  border-color: #ef4444;
-}
-
-.errore-text {
-  color: #ef4444;
-  font-size: 14px;
-  margin: -4px 0 8px 0;
-}
-
-.login-box button {
-  width: 100%;
-  padding: 14px;
-  background: #2563eb;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 16px;
-  cursor: pointer;
-  font-weight: 600;
-  margin-top: 8px;
-}
-
-.login-box button:hover {
-  background: #1d4ed8;
-}
-
-/* HEADER */
-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 32px;
-  padding-bottom: 16px;
-  border-bottom: 2px solid #e5e7eb;
-}
-
-header h1 {
-  font-size: 28px;
-  color: #111827;
-}
-
-.logout {
-  padding: 10px 20px;
-  background: #dc2626;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 14px;
-}
-
-.logout:hover {
-  background: #b91c1c;
-}
-
-/* CONTROLLI */
-.data-selector {
-  margin-bottom: 24px;
-  font-size: 16px;
-}
-
-.data-selector label {
-  font-weight: 600;
-  margin-right: 8px;
-}
-
-.data-selector input {
-  padding: 10px 14px;
-  border: 2px solid #e5e7eb;
-  border-radius: 8px;
-  font-size: 15px;
-}
-
-.data-selector input:focus {
-  outline: none;
-  border-color: #2563eb;
-}
-
-/* FORM */
-.form-prenotazione {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 32px;
-  flex-wrap: wrap;
-  padding: 20px;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-}
-
-.form-prenotazione input,
-.form-prenotazione select {
-  padding: 12px;
-  border: 2px solid #e5e7eb;
-  border-radius: 8px;
-  font-size: 15px;
-  flex: 1;
-  min-width: 140px;
-}
-
-.form-prenotazione input:focus,
-.form-prenotazione select:focus {
-  outline: none;
-  border-color: #2563eb;
-}
-
-.form-prenotazione button {
-  padding: 12px 28px;
-  background: #2563eb;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 15px;
-}
-
-.form-prenotazione button:hover {
-  background: #1d4ed8;
-}
-
-/* GRIGLIA TAVOLI */
-h2 {
-  margin: 24px 0 16px 0;
-  font-size: 20px;
-  color: #374151;
-}
-
-.griglia-tavoli {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 16px;
-}
-
-.tavolo {
-  padding: 20px;
-  border-radius: 12px;
-  text-align: center;
-  border: 3px solid #e5e7eb;
-  background: white;
-  transition: transform 0.15s;
-}
-
-.tavolo:hover {
-  transform: translateY(-2px);
-}
-
-.tavolo.libero {
-  background: #f0fdf4;
-  border-color: #86efac;
-}
-
-.tavolo.occupato {
-  background: #fef2f2;
-  border-color: #fca5a5;
-}
-
-.tavolo.arrivato {
-  background: #dbeafe;
-  border-color: #60a5fa;
-}
-
-.numero-tavolo {
-  font-size: 32px;
-  font-weight: 800;
-  margin-bottom: 10px;
-  color: #111827;
-}
-
-.nome {
-  font-weight: 700;
-  margin-bottom: 6px;
-  font-size: 16px;
-  color: #111827;
-}
-
-.persone,
-.ora,
-.note {
-  font-size: 14px;
-  color: #6b7280;
-  margin-bottom: 4px;
-}
-
-.note {
-  font-style: italic;
-  font-size: 13px;
-}
-
-.libero-text {
-  color: #16a34a;
-  font-weight: 700;
-  font-size: 16px;
-  margin-top: 12px;
-}
-
-.azioni {
   display: flex;
   gap: 8px;
-  margin-top: 12px;
-  justify-content: center;
-}
+  margin: 32px 0 0;
 
-.tavolo button {
-  padding: 8px 14px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 600;
-  transition: opacity 0.2s;
-}
-
-.tavolo button:hover {
-  opacity: 0.85;
-}
-
-.btn-attesa {
-  background: #f59e0b;
-  color: white;
-}
-
-.btn-arrivato {
-  background: #16a34a;
-  color: white;
-}
-
-.btn-elimina {
-  background: #ef4444;
-  color: white;
-  padding: 8px 10px;
-}
-
-/* MOBILE */
-@media (max-width: 768px) {
-  .form-prenotazione {
-    flex-direction: column;
+  .logo {
+    height: 18px;
   }
-  
-  .form-prenotazione input,
-  .form-prenotazione select,
-  .form-prenotazione button {
-    width: 100%;
+
+  a {
+    color: var(--text-h);
+    font-size: 16px;
+    border-radius: 6px;
+    background: var(--social-bg);
+    display: flex;
+    padding: 6px 12px;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    transition: box-shadow 0.3s;
+
+    &:hover {
+      box-shadow: var(--shadow);
+    }
+    .button-icon {
+      height: 18px;
+      width: 18px;
+    }
   }
-  
-  .griglia-tavoli {
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+
+  @media (max-width: 1024px) {
+    margin-top: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+
+    li {
+      flex: 1 1 calc(50% - 8px);
+    }
+
+    a {
+      width: 100%;
+      justify-content: center;
+      box-sizing: border-box;
+    }
+  }
+}
+
+#spacer {
+  height: 88px;
+  border-top: 1px solid var(--border);
+  @media (max-width: 1024px) {
+    height: 48px;
+  }
+}
+
+.ticks {
+  position: relative;
+  width: 100%;
+
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    top: -4.5px;
+    border: 5px solid transparent;
+  }
+
+  &::before {
+    left: 0;
+    border-left-color: var(--border);
+  }
+  &::after {
+    right: 0;
+    border-right-color: var(--border);
   }
 }
