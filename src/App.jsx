@@ -1,243 +1,496 @@
-import { useState, useEffect } from 'react'
-import { createClient } from '@supabase/supabase-js'
-import './App.css'
+import { useEffect, useState } from 'react';
+import { createClient } from '@supabase/supabase-js';
+import { DndContext, useDraggable, useDroppable } from '@dnd-kit/core';
 
-const supabase = createClient(
-  'https://xpxhtnqwpgkyuwptgnmq.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhweGh0bnF3cGdreXV3cHRnbm1xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc4NDI2MjEsImV4cCI6MjA2MzQxODYyMX0._wIVLwErR9MYWGZkEn9yCQUxHnc3wQhy7kFbE_9fz9M'
-)
+const supabaseUrl = 'https://jturyhlrmmqarbbjulev.supabase.co';
+const supabaseKey = 'sb_publishable_S6ELxV6XfMkKkfNTwwFy_Q_fFdBF6oI';
 
-// CAMBIA PASSWORD QUI
-const APP_PASSWORD = 'ristorante2026'
+const supabase = createClient(supabaseUrl, supabaseKey);
 
-function App() {
-  const [autenticato, setAutenticato] = useState(false)
-  const [password, setPassword] = useState('')
-  const [errorePassword, setErrorePassword] = useState(false)
+const times = [
+  '18:00','18:15','18:30','18:45',
+  '19:00','19:15','19:30','19:45',
+  '20:00','20:15','20:30','20:45',
+  '21:00','21:15','21:30','21:45'
+];
 
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0])
-  const [reservations, setReservations] = useState([])
-  const [loading, setLoading] = useState(true)
+const tables = Array.from({ length: 50 }, (_, i) => i + 1);
 
-  // campi form
-  const [name, setName] = useState('')
-  const [people, setPeople] = useState('')
-  const [tables, setTables] = useState('')
-  const [time, setTime] = useState('')
-  const [note, setNote] = useState('')
+function DraggableReservation({ reservation }) {
+  const { attributes, listeners, setNodeRef, transform } = useDraggable({
+    id: reservation.id,
+  });
 
-  const tavoliDisponibili = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+  const style = transform
+    ? {
+        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+      }
+    : undefined;
 
-  useEffect(() => {
-    const salvata = localStorage.getItem('login_prenotazioni')
-    if (salvata === 'ok') setAutenticato(true)
-  }, [])
+  let bg = '#fde68a';
 
-  const login = (e) => {
-    e.preventDefault()
-    if (password === APP_PASSWORD) {
-      setAutenticato(true)
-      localStorage.setItem('login_prenotazioni', 'ok')
-      setErrorePassword(false)
-    } else {
-      setErrorePassword(true)
-    }
+  if (reservation.accommodated) {
+    bg = '#86efac';
   }
 
-  const logout = () => {
-    localStorage.removeItem('login_prenotazioni')
-    setAutenticato(false)
-    setPassword('')
-  }
-
-  useEffect(() => {
-    if (!autenticato) return
-    fetchPrenotazioni()
-  }, [date, autenticato])
-
-  const fetchPrenotazioni = async () => {
-    setLoading(true)
-    const { data: dati, error } = await supabase
-  .from('reservations')
-  .select('*')
-  .eq('date', date)
-  .order('time', { ascending: true })
-
-    if (error) {
-      console.error(error)
-      alert('Errore: ' + error.message)
-    } else {
-      setReservations(dati || [])
-    }
-    setLoading(false)
-  }
-
-  const aggiungiPrenotazione = async (e) => {
-    e.preventDefault()
-    if (!name ||!people ||!tables) return
-
-    const { error } = await supabase
-  .from('reservations')
-  .insert([{
-        name,
-        people: parseInt(people),
-        tables,
-        date,
-        time: time || null,
-        note: note || null,
-        accommodated: false
-      }])
-
-    if (error) {
-      alert('Errore: ' + error.message)
-    } else {
-      setName('')
-      setPeople('')
-      setTables('')
-      setTime('')
-      setNote('')
-      fetchPrenotazioni()
-    }
-  }
-
-  const toggleAccommodated = async (id, accommodated) => {
-    const { error } = await supabase
-  .from('reservations')
-  .update({ accommodated:!accommodated })
-  .eq('id', id)
-
-    if (error) alert('Errore: ' + error.message)
-    else fetchPrenotazioni()
-  }
-
-  const eliminaPrenotazione = async (id) => {
-    if (!confirm('Eliminare questa prenotazione?')) return
-    const { error } = await supabase
-  .from('reservations')
-  .delete()
-  .eq('id', id)
-
-    if (error) alert('Errore: ' + error.message)
-    else fetchPrenotazioni()
-  }
-
-  if (!autenticato) {
-    return (
-      <div className="login-wrap">
-        <div className="login-box">
-          <h1>Prenotazioni</h1>
-          <form onSubmit={login}>
-            <input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className={errorePassword? 'errore' : ''}
-            />
-            {errorePassword && <p className="errore-text">Password errata</p>}
-            <button type="submit">Entra</button>
-          </form>
-        </div>
-      </div>
-    )
+  if (Number(reservation.people) >= 6) {
+    bg = '#fca5a5';
   }
 
   return (
-    <div className="app">
-      <header>
-        <h1>Prenotazioni Ristorante</h1>
-        <button className="btn-logout" onClick={logout}>Esci</button>
-      </header>
+    <div
+      ref={setNodeRef}
+      style={{
+        ...style,
+        background: bg,
+        padding: 6,
+        borderRadius: 6,
+        marginBottom: 4,
+        fontSize: 12,
+      }}
+      {...listeners}
+      {...attributes}
+    >
+      <strong>{reservation.name}</strong>
+      <div>{reservation.people} persone</div>
+    </div>
+  );
+}
 
-      <div className="toolbar">
-        <div className="data-picker">
-          <label>Data:</label>
+function Cell({ id, children }) {
+  const { setNodeRef } = useDroppable({ id });
+
+  return (
+    <td
+      ref={setNodeRef}
+      style={{
+        border: '1px solid #ddd',
+        minWidth: 120,
+        height: 90,
+        verticalAlign: 'top',
+        padding: 4,
+        background: '#fff',
+      }}
+    >
+      {children}
+    </td>
+  );
+}
+
+export default function App() {
+  const [reservations, setReservations] = useState([]);
+  const [selectedDate, setSelectedDate] = useState(
+    new Date().toISOString().split('T')[0]
+  );
+
+  const [editingId, setEditingId] = useState(null);
+
+  const [form, setForm] = useState({
+    name: '',
+    people: '',
+    tables: '',
+    time: '18:00',
+    note: '',
+  });
+
+  useEffect(() => {
+    loadReservations();
+  }, []);
+
+  async function loadReservations() {
+    const { data } = await supabase
+      .from('reservations')
+      .select('*')
+      .order('date')
+      .order('time');
+
+    if (data) {
+      setReservations(data);
+    }
+  }
+
+   async function saveReservation() {
+    if (!form.name || !form.people) return;
+
+    // Costruiamo il payload con i tipi di dati corretti per Supabase
+    const payload = {
+      name: form.name,
+      people: parseInt(form.people, 10), // Converte in numero (int4)
+      tables: form.tables || null,       // Mantiene testo (es. "10,11") o mette null se vuoto
+      time: form.time,
+      note: form.note || null,           // Testo o null se vuoto
+      date: selectedDate,
+    };
+
+    if (editingId !== null) {
+      // In fase di modifica NON inviamo 'accommodated: false' per non resettare lo stato
+      await supabase
+        .from('reservations')
+        .update(payload)
+        .eq('id', editingId);
+
+      setReservations(
+        reservations.map((r) =>
+          r.id === editingId ? { ...r, ...payload } : r
+        )
+      );
+    } else {
+      // In fase di inserimento aggiungiamo lo stato iniziale
+      const payloadNuovo = { ...payload, accommodated: false };
+
+      const { data, error } = await supabase
+        .from('reservations')
+        .insert([payloadNuovo])
+        .select();
+
+      if (error) {
+        console.error("Errore Supabase:", error.message);
+        return;
+      }
+
+      if (data && data[0]) {
+        setReservations([...reservations, data[0]]);
+      }
+    }
+
+    setEditingId(null);
+    setForm({
+      name: '',
+      people: '',
+      tables: '',
+      time: '18:00',
+      note: '',
+    });
+  }
+
+ async function deleteReservation(id) {
+
+  await supabase
+    .from('reservations')
+    .delete()
+    .eq('id', id);
+
+  loadReservations();
+
+  setReservations(
+    reservations.filter((r) => r.id !== id)
+  );
+}
+
+  async function toggleAccommodated(reservation) {
+
+  await supabase
+    .from('reservations')
+    .update({
+      accommodated: !reservation.accommodated,
+    })
+    .eq('id', reservation.id);
+
+  loadReservations();
+
+  setReservations(
+    reservations.map((r) =>
+      r.id === reservation.id
+        ? {
+            ...r,
+            accommodated: !r.accommodated,
+          }
+        : r
+    )
+  );
+}
+
+  function exportBackup() {
+    const data = JSON.stringify(reservations, null, 2);
+
+    const blob = new Blob([data], {
+      type: 'application/json',
+    });
+
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'backup-prenotazioni.json';
+    a.click();
+  }
+
+  async function handleDragEnd(event) {
+    const { active, over } = event;
+
+    if (!over) return;
+
+    const reservationId = active.id;
+
+    const [table, time] = over.id.split('|');
+
+    await supabase
+      .from('reservations')
+      .update({
+        tables: table,
+        time,
+      })
+      .eq('id', reservationId);
+
+    setReservations(
+      reservations.map((r) =>
+        r.id === reservationId
+          ? {
+              ...r,
+              tables: table,
+              time,
+            }
+          : r
+      )
+    );
+  }
+
+  const filteredReservations = reservations.filter(
+    (r) => r.date === selectedDate
+  );
+
+  const totalPeople = filteredReservations.reduce(
+    (sum, r) => sum + Number(r.people || 0),
+    0
+  );
+
+function reservationsForCell(table, time) {
+  return filteredReservations.filter((r) => {
+
+    const reservationTables = r.tables
+      ? r.tables.split(',').map((t) => t.trim())
+      : [];
+
+    if (!reservationTables.includes(String(table))) {
+      return false;
+    }
+
+    const startIndex = times.indexOf(r.time);
+    const currentIndex = times.indexOf(time);
+
+    return (
+      currentIndex >= startIndex &&
+      currentIndex < startIndex + 6
+    );
+  });
+}
+
+  return (
+    <div style={{ padding: 20 }}>
+      <h1>Agenda Prenotazioni</h1>
+
+      <div
+        style={{
+          background: '#fff',
+          padding: 20,
+          borderRadius: 10,
+          marginBottom: 20,
+        }}
+      >
+        <div style={{ marginBottom: 10 }}>
           <input
             type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
           />
+        </div>
+
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(5,1fr)',
+            gap: 10,
+          }}
+        >
+          <input
+            placeholder="Nome"
+            value={form.name}
+            onChange={(e) =>
+              setForm({ ...form, name: e.target.value })
+            }
+          />
+
+          <input
+            type="number"
+            placeholder="Persone"
+            value={form.people}
+            onChange={(e) =>
+              setForm({ ...form, people: e.target.value })
+            }
+          />
+
+          <input
+            placeholder="Tavoli es. 10,11"
+            value={form.tables}
+            onChange={(e) =>
+              setForm({ ...form, tables: e.target.value })
+            }
+          />
+  <input
+  placeholder="Note"
+  value={form.note}
+  onChange={(e) =>
+    setForm({ ...form, note: e.target.value })
+  }
+/>
+          <select
+            value={form.time}
+            onChange={(e) =>
+              setForm({ ...form, time: e.target.value })
+            }
+          >
+            {times.map((t) => (
+              <option key={t}>{t}</option>
+            ))}
+          </select>
+
+          <button onClick={saveReservation}>
+            {editingId ? 'Salva' : 'Aggiungi'}
+          </button>
         </div>
       </div>
 
-      <form onSubmit={aggiungiPrenotazione} className="form-add">
-        <input
-          type="text"
-          placeholder="Nome cliente"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          required
-        />
-        <input
-          type="number"
-          placeholder="Persone"
-          value={people}
-          onChange={(e) => setPeople(e.target.value)}
-          min="1"
-          required
-        />
-        <select value={tables} onChange={(e) => setTables(e.target.value)} required>
-          <option value="">Tavolo</option>
-          {tavoliDisponibili.map(t => (
-            <option key={t} value={t}>Tavolo {t}</option>
-          ))}
-        </select>
-        <input
-          type="time"
-          value={time}
-          onChange={(e) => setTime(e.target.value)}
-        />
-        <input
-          type="text"
-          placeholder="Note"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-        />
-        <button type="submit">Aggiungi</button>
-      </form>
+      <div
+        style={{
+          background: '#fff',
+          padding: 20,
+          borderRadius: 10,
+          marginBottom: 20,
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            marginBottom: 10,
+          }}
+        >
+          <div>
+            Prenotazioni: {filteredReservations.length}
+          </div>
 
-      <h2>Griglia Tavoli - {date}</h2>
-      {loading? <p>Caricamento...</p> : (
-        <div className="grid-tavoli">
-          {tavoliDisponibili.map(numeroTavolo => {
-            const p = reservations.find(r => parseInt(r.tables) === numeroTavolo)
-            return (
-              <div
-                key={numeroTavolo}
-                className={`card-tavolo ${p? 'occupato' : 'libero'} ${p?.accommodated? 'arrivato' : ''}`}
-              >
-                <div className="numero">{numeroTavolo}</div>
-                {p? (
-                  <>
-                    <div className="nome">{p.name}</div>
-                    <div className="info">{p.people} pax</div>
-                    {p.time && <div className="info">{p.time}</div>}
-                    {p.note && <div className="info note">{p.note}</div>}
-                    <div className="azioni">
-                      <button
-                        onClick={() => toggleAccommodated(p.id, p.accommodated)}
-                        className={p.accommodated? 'btn-ok' : 'btn-wait'}
-                      >
-                        {p.accommodated? '✓ Arrivato' : 'Segna arrivo'}
-                      </button>
-                      <button
-                        onClick={() => eliminaPrenotazione(p.id)}
-                        className="btn-del"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  </>
-                ) : (
-                  <div className="libero">Libero</div>
-                )}
-              </div>
-            )
-          })}
+          <div>
+            Coperti: {totalPeople}
+          </div>
+
+          <button onClick={exportBackup}>
+            Backup
+          </button>
         </div>
-      )}
-    </div>
-  )
-}
 
-export default App
+        <table width="100%" border="1">
+          <thead>
+            <tr>
+              <th>Ora</th>
+              <th>Nome</th>
+              <th>Persone</th>
+              <th>Note</th>
+              <th>Tavoli</th>
+              <th>Stato</th>
+              <th>Azioni</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {filteredReservations.map((r) => (
+              <tr key={r.id}>
+                <td>{r.time}</td>
+                <td>{r.name}</td>
+                <td>{r.people}</td>
+                <td>{r.note}</td>
+                <td>{r.tables || '-'}</td>
+                <td>
+                  {r.accommodated
+                    ? 'accommodated'
+                    : 'In attesa'}
+                </td>
+
+                <td>
+                  <button
+                    onClick={() => toggleAccommodated(r)}
+                  >
+                    Accomoda
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setEditingId(r.id);
+                      setForm({
+                        name: r.name,
+                        people: r.people,
+                        tables: r.tables,
+                        time: r.time,
+                      });
+                    }}
+                  >
+                    Modifica
+                  </button>
+
+                  <button
+                    onClick={() => deleteReservation(r.id)}
+                  >
+                    Elimina
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <DndContext onDragEnd={handleDragEnd}>
+        <div
+          style={{
+            overflowX: 'auto',
+            background: '#fff',
+            padding: 20,
+            borderRadius: 10,
+          }}
+        >
+          <table>
+            <thead>
+              <tr>
+                <th>Tavolo</th>
+
+                {times.map((time) => (
+                  <th key={time}>{time}</th>
+                ))}
+              </tr>
+            </thead>
+
+            <tbody>
+              {tables.map((table) => (
+                <tr key={table}>
+                  <td>
+                    <strong>{table}</strong>
+                  </td>
+
+                  {times.map((time) => {
+                    const cellReservations = reservationsForCell(
+                      table,
+                      time
+                    );
+
+                    return (
+                      <Cell
+                        key={`${table}-${time}`}
+                        id={`${table}|${time}`}
+                      >
+                        {cellReservations.map((reservation) => (
+                          <DraggableReservation
+                            key={reservation.id}
+                            reservation={reservation}
+                          />
+                        ))}
+                      </Cell>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </DndContext>
+    </div>
+  );
+}
