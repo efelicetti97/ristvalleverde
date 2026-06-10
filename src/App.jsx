@@ -468,6 +468,7 @@ export default function App() {
                         people: r.people,
                         tables: r.tables,
                         time: r.time,
+                        note: r.note || '',
                       });
                     }}
                   >
