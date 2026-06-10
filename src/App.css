@@ -233,3 +233,12 @@
 .riga-accomodata td:first-child {
   border-left: 4px solid #22c55e !important;
 }
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+table td, table th {
+  border: 1px solid #ddd;
+  padding: 8px;
+}
