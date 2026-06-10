@@ -230,35 +230,44 @@ export default function App() {
     a.click();
   }
 
-  async function handleDragEnd(event) {
-    const { active, over } = event;
+ async function handleDragEnd(event) {
+  const { active, over } = event;
+  if (!over) return;
 
-    if (!over) return;
-
-    const reservationId = active.id;
-
-    const [table, time] = over.id.split('|');
-
-    await supabase
-     .from('reservations')
-     .update({
-        tables: table,
-        time,
-      })
-     .eq('id', reservationId);
-
-    setReservations(
-      reservations.map((r) =>
-        r.id === reservationId
-         ? {
-             ...r,
-              tables: table,
-              time,
-            }
-          : r
-      )
-    );
+  const reservationId = active.id;
+  const [newTable, newTime] = over.id.split('|');
+  
+  // Trova la prenotazione originale
+  const reservation = reservations.find(r => r.id === reservationId);
+  if (!reservation) return;
+  
+  // Se l'ora è diversa, annulla il drop
+  if (reservation.time !== newTime) {
+    console.log('Non puoi cambiare orario, solo tavolo');
+    return; // Blocca il cambio
   }
+
+  // Aggiorna solo il tavolo, lascia l'ora originale
+  await supabase
+    .from('reservations')
+    .update({
+      tables: newTable,
+      // NIENTE time qui
+    })
+    .eq('id', reservationId);
+
+  setReservations(
+    reservations.map((r) =>
+      r.id === reservationId
+        ? {
+            ...r,
+            tables: newTable,
+            // time resta quello originale: r.time
+          }
+        : r
+    )
+  );
+}
 
   // 1. FUNZIONE PASSWORD - AGGIUNTA
   function checkPassword() {
@@ -484,7 +493,7 @@ export default function App() {
         </table>
       </div>
 
-      
+      <DndContext onDragEnd={handleDragEnd}>
         {/* 5. WRAPPER CON SCROLL + STICKY - MODIFICATO */}
         <div
           style={{
@@ -536,30 +545,17 @@ export default function App() {
                     );
 
                     return (
-                    <Cell key={`${table}-${time}`} id={`${table}|${time}`}>
-  {cellReservations.map((reservation) => {
-    let bg = '#fde68a';
-    if (reservation.accommodated) bg = '#86efac';
-    if (Number(reservation.people) >= 6) bg = '#fca5a5';
-    
-    return (
-      <div
-        key={reservation.id}
-        className={reservation.accommodated ? 'prenotazione-accomodata' : ''}
-        style={{
-          background: bg,
-          padding: 6,
-          borderRadius: 6,
-          marginBottom: 4,
-          fontSize: 12,
-        }}
-      >
-        <strong>{reservation.name}</strong>
-        <div>{reservation.people} persone</div>
-      </div>
-    );
-  })}
-</Cell>
+                      <Cell
+                        key={`${table}-${time}`}
+                        id={`${table}|${time}`}
+                      >
+                        {cellReservations.map((reservation) => (
+                          <DraggableReservation
+                            key={reservation.id}
+                            reservation={reservation}
+                          />
+                        ))}
+                      </Cell>
                     );
                   })}
                 </tr>
