@@ -23,43 +23,45 @@ const tables = [
 ];
 
 function DraggableReservation({ reservation }) {
+  // Se non è il blocco iniziale, non è trascinabile
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: reservation.id,
+    disabled: !reservation.isStartBlock, // BLOCCA IL DRAG
   });
 
   const style = transform
-   ? {
+    ? {
         transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
       }
     : undefined;
 
   let bg = '#fde68a';
+  if (reservation.accommodated) bg = '#86efac';
+  if (Number(reservation.people) >= 6) bg = '#fca5a5';
 
-  if (reservation.accommodated) {
-    bg = '#86efac';
-  }
-
-  if (Number(reservation.people) >= 6) {
-    bg = '#fca5a5';
-  }
+  // Se non è il blocco iniziale, cursore normale e opacità ridotta
+  const cursorStyle = reservation.isStartBlock ? {} : { cursor: 'default', opacity: 0.7 };
 
   return (
     <div
       ref={setNodeRef}
-      className={reservation.accommodated? 'prenotazione-accomodata' : ''} // 4. AGGIUNTA CLASSE
+      className={reservation.accommodated ? 'prenotazione-accomodata' : ''}
       style={{
-       ...style,
+        ...style,
+        ...cursorStyle,
         background: bg,
         padding: 6,
         borderRadius: 6,
         marginBottom: 4,
         fontSize: 12,
+        border: reservation.isStartBlock ? '2px solid #f59e0b' : 'none' // Bordo al primo blocco
       }}
-      {...listeners}
-      {...attributes}
+      {...(reservation.isStartBlock ? listeners : {})}
+      {...(reservation.isStartBlock ? attributes : {})}
     >
       <strong>{reservation.name}</strong>
       <div>{reservation.people} persone</div>
+      {reservation.isStartBlock && <div style={{fontSize: 10}}>↔ Trascina</div>}
     </div>
   );
 }
@@ -289,24 +291,27 @@ export default function App() {
   );
 
   function reservationsForCell(table, time) {
-    return filteredReservations.filter((r) => {
-      const reservationTables = r.tables
-       ? r.tables.split(',').map((t) => t.trim())
-        : [];
+  return filteredReservations.filter((r) => {
+    const reservationTables = r.tables
+      ? r.tables.split(',').map((t) => t.trim())
+      : [];
 
-      if (!reservationTables.includes(String(table))) {
-        return false;
-      }
+    if (!reservationTables.includes(String(table))) {
+      return false;
+    }
 
-      const startIndex = times.indexOf(r.time);
-      const currentIndex = times.indexOf(time);
+    const startIndex = times.indexOf(r.time);
+    const currentIndex = times.indexOf(time);
 
-      return (
-        currentIndex >= startIndex &&
-        currentIndex < startIndex + 6
-      );
-    });
-  }
+    return (
+      currentIndex >= startIndex &&
+      currentIndex < startIndex + 6
+    );
+  }).map(r => ({
+    ...r,
+    isStartBlock: r.time === time // TRUE solo se è il primo blocco
+  }));
+}
 
   // 1. BLOCCO LOGIN - AGGIUNTA - DEVE STARE DOPO TUTTI GLI HOOK
   if (!autenticato) {
