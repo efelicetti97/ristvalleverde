@@ -421,7 +421,7 @@ export default function App() {
           </button>
         </div>
 
-        <table width="100%" style={{ borderCollapse: 'collapse' }}>
+        <table width="100%" border="1">
           <thead>
             <tr>
               <th>Ora</th>
