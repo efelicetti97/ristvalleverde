@@ -193,27 +193,29 @@ export default function App() {
     );
   }
 
-  async function toggleAccommodated(reservation) {
-    await supabase
-     .from('reservations')
-     .update({
-        accommodated:!reservation.accommodated,
-      })
-     .eq('id', reservation.id);
+ async function toggleAccommodated(reservation) {
+  const newValue = !reservation.accommodated;
+  
+  // Aggiorna solo il campo accommodated su Supabase
+  const { error } = await supabase
+    .from('reservations')
+    .update({ accommodated: newValue })
+    .eq('id', reservation.id);
 
-    loadReservations();
-
-    setReservations(
-      reservations.map((r) =>
-        r.id === reservation.id
-         ? {
-             ...r,
-              accommodated:!r.accommodated,
-            }
-          : r
-      )
-    );
+  if (error) {
+    console.error('Errore update:', error);
+    return;
   }
+
+  // Aggiorna solo il campo accommodated nello stato locale
+  setReservations(
+    reservations.map((r) =>
+      r.id === reservation.id 
+        ? { ...r, accommodated: newValue } 
+        : r
+    )
+  );
+}
 
   function exportBackup() {
     const data = JSON.stringify(reservations, null, 2);
@@ -230,35 +232,36 @@ export default function App() {
     a.click();
   }
 
-  async function handleDragEnd(event) {
-    const { active, over } = event;
+ async function handleDragEnd(event) {
+  const { active, over } = event;
+  if (!over) return;
 
-    if (!over) return;
+  const reservationId = active.id;
+  const [newTable, newTime] = over.id.split('|');
+  
+  // Aggiorna SOLO tavolo e ora su Supabase
+  const { error } = await supabase
+    .from('reservations')
+    .update({ 
+      tables: newTable,
+      time: newTime 
+    })
+    .eq('id', reservationId);
 
-    const reservationId = active.id;
-
-    const [table, time] = over.id.split('|');
-
-    await supabase
-     .from('reservations')
-     .update({
-        tables: table,
-        time,
-      })
-     .eq('id', reservationId);
-
-    setReservations(
-      reservations.map((r) =>
-        r.id === reservationId
-         ? {
-             ...r,
-              tables: table,
-              time,
-            }
-          : r
-      )
-    );
+  if (error) {
+    console.error('Errore drag:', error);
+    return;
   }
+
+  // Aggiorna SOLO tavolo e ora nello stato locale
+  setReservations(
+    reservations.map((r) =>
+      r.id === reservationId
+        ? { ...r, tables: newTable, time: newTime }
+        : r
+    )
+  );
+}
 
   // 1. FUNZIONE PASSWORD - AGGIUNTA
   function checkPassword() {
