@@ -239,24 +239,33 @@ export default function App() {
   const reservationId = active.id;
   const [newTable, newTime] = over.id.split('|');
   
-  // Aggiorna SOLO tavolo e ora su Supabase
-  const { error } = await supabase
+  // Trova la prenotazione originale
+  const reservation = reservations.find(r => r.id === reservationId);
+  if (!reservation) return;
+  
+  // Se l'ora è diversa, annulla il drop
+  if (reservation.time !== newTime) {
+    console.log('Non puoi cambiare orario, solo tavolo');
+    return; // Blocca il cambio
+  }
+
+  // Aggiorna solo il tavolo, lascia l'ora originale
+  await supabase
     .from('reservations')
-    .update({ 
+    .update({
       tables: newTable,
-      time: newTime 
+      // NIENTE time qui
     })
     .eq('id', reservationId);
-
-  if (error) {
-    console.error('Errore drag:', error);
-    return;
-  }
 
   setReservations(
     reservations.map((r) =>
       r.id === reservationId
-        ? { ...r, tables: newTable, time: newTime }
+        ? {
+            ...r,
+            tables: newTable,
+            // time resta quello originale: r.time
+          }
         : r
     )
   );
