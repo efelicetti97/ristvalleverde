@@ -253,7 +253,6 @@ export default function App() {
     return;
   }
 
-  // Aggiorna SOLO tavolo e ora nello stato locale
   setReservations(
     reservations.map((r) =>
       r.id === reservationId
