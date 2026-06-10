@@ -64,10 +64,9 @@ function App() {
       console.error(error)
       alert('Errore: ' + error.message)
     } else {
-      // Ordina per ordine tavoli custom
       const ordinati = (dati || []).sort((a, b) => {
-        const idxA = TAVOLI_ORDINE.indexOf(parseInt(a.tables))
-        const idxB = TAVOLI_ORDINE.indexOf(parseInt(b.tables))
+        const idxA = TAVOLI_ORDINE.indexOf(Number(a.tables || 0))
+        const idxB = TAVOLI_ORDINE.indexOf(Number(b.tables || 0))
         if (idxA!== idxB) return idxA - idxB
         return (a.time || '').localeCompare(b.time || '')
       })
@@ -80,7 +79,6 @@ function App() {
     e.preventDefault()
     if (!name ||!people ||!tables) return
 
-    // Validazione orario servizio 12:00-14:00
     if (time) {
       const [h, m] = time.split(':').map(Number)
       const minuti = h * 60 + m
@@ -172,32 +170,6 @@ function App() {
     setEditData({})
   }
 
-  // Calcolo coperti ogni 15 min dalle 12:00 alle 14:00
-  const calcolaCoperti = () => {
-    const slot = {}
-    for (let h = 12; h < 14; h++) {
-      for (let m = 0; m < 60; m += 15) {
-        const ora = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
-        slot[ora] = 0
-      }
-    }
-    slot['14:00'] = 0
-
-    reservations.forEach(r => {
-      if (!r.time) return
-      const [h, m] = r.time.split(':').map(Number)
-      const minutiTotali = h * 60 + m
-      if (minutiTotali >= 720 && minutiTotali <= 840) {
-        const quarto = Math.floor(m / 15) * 15
-        const chiave = `${String(h).padStart(2, '0')}:${String(quarto).padStart(2, '0')}`
-        if (slot[chiave]!== undefined) slot[chiave] += parseInt(r.people)
-      }
-    })
-    return slot
-  }
-
-  const copertiSlot = calcolaCoperti()
-
   if (!autenticato) {
     return (
       <div className="login-container">
@@ -270,25 +242,13 @@ function App() {
         <button type="submit">Aggiungi</button>
       </form>
 
-      <div className="coperti-box">
-        <strong>Coperti ogni 15min:</strong>
-        <div className="coperti-grid">
-          {Object.entries(copertiSlot).map(([ora, pax]) => (
-            <div key={ora} className="slot">
-              <span>{ora}</span>
-              <strong>{pax}</strong>
-            </div>
-          ))}
-        </div>
-      </div>
-
       {loading? <p>Caricamento...</p> : (
         <div className="table-wrap">
           <table>
             <thead>
               <tr>
-                <th className="sticky-col">Ora</th>
-                <th className="sticky-col">Nome</th>
+                <th>Ora</th>
+                <th>Nome</th>
                 <th>Pax</th>
                 <th>Tavolo</th>
                 <th>Note</th>
