@@ -447,7 +447,7 @@ export default function App() {
                 <td>{r.tables || '-'}</td>
                 <td>
                   {r.accommodated
-                   ? 'accommodated'
+                   ? '✅accommodated'
                     : 'In attesa'}
                 </td>
 
@@ -484,7 +484,7 @@ export default function App() {
         </table>
       </div>
 
-      <DndContext onDragEnd={handleDragEnd}>
+      
         {/* 5. WRAPPER CON SCROLL + STICKY - MODIFICATO */}
         <div
           style={{
@@ -536,17 +536,30 @@ export default function App() {
                     );
 
                     return (
-                      <Cell
-                        key={`${table}-${time}`}
-                        id={`${table}|${time}`}
-                      >
-                        {cellReservations.map((reservation) => (
-                          <DraggableReservation
-                            key={reservation.id}
-                            reservation={reservation}
-                          />
-                        ))}
-                      </Cell>
+                    <Cell key={`${table}-${time}`} id={`${table}|${time}`}>
+  {cellReservations.map((reservation) => {
+    let bg = '#fde68a';
+    if (reservation.accommodated) bg = '#86efac';
+    if (Number(reservation.people) >= 6) bg = '#fca5a5';
+    
+    return (
+      <div
+        key={reservation.id}
+        className={reservation.accommodated ? 'prenotazione-accomodata' : ''}
+        style={{
+          background: bg,
+          padding: 6,
+          borderRadius: 6,
+          marginBottom: 4,
+          fontSize: 12,
+        }}
+      >
+        <strong>{reservation.name}</strong>
+        <div>{reservation.people} persone</div>
+      </div>
+    );
+  })}
+</Cell>
                     );
                   })}
                 </tr>
