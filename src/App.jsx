@@ -435,8 +435,11 @@ export default function App() {
           </thead>
 
           <tbody>
-            {filteredReservations.map((r) => (
-              <tr key={r.id}>
+  {filteredReservations.map((r) => (
+    <tr 
+      key={r.id} 
+      className={r.accommodated ? 'riga-accomodata' : ''}
+    >
                 <td>{r.time}</td>
                 <td>{r.name}</td>
                 <td>{r.people}</td>

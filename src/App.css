@@ -231,3 +231,12 @@
   text-decoration: line-through;
   opacity: 0.8;
 }
+.riga-accomodata td {
+  background: #dcfce7!important;
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+
+.riga-accomodata td:first-child {
+  border-left: 4px solid #22c55e;
+}
