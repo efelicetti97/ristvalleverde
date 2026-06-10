@@ -14,7 +14,13 @@ const times = [
   '21:00','21:15','21:30','21:45'
 ];
 
-const tables = Array.from({ length: 50 }, (_, i) => i + 1);
+// 3. NUOVO ORDINE TAVOLI - MODIFICATO
+const tables = [
+  1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,
+  40,41,42,43,44,45,46,47,48,49,
+  30,31,32,33,34,35,36,37,38,39,
+  50,51,52,53
+];
 
 function DraggableReservation({ reservation }) {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
@@ -22,7 +28,7 @@ function DraggableReservation({ reservation }) {
   });
 
   const style = transform
-    ? {
+   ? {
         transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
       }
     : undefined;
@@ -40,8 +46,9 @@ function DraggableReservation({ reservation }) {
   return (
     <div
       ref={setNodeRef}
+      className={reservation.accommodated? 'prenotazione-accomodata' : ''} // 4. AGGIUNTA CLASSE
       style={{
-        ...style,
+       ...style,
         background: bg,
         padding: 6,
         borderRadius: 6,
@@ -78,13 +85,12 @@ function Cell({ id, children }) {
 }
 
 export default function App() {
+  // HOOK ESISTENTI + NUOVI - TUTTI IN CIMA
   const [reservations, setReservations] = useState([]);
   const [selectedDate, setSelectedDate] = useState(
     new Date().toISOString().split('T')[0]
   );
-
   const [editingId, setEditingId] = useState(null);
-
   const [form, setForm] = useState({
     name: '',
     people: '',
@@ -92,89 +98,63 @@ export default function App() {
     time: '18:00',
     note: '',
   });
-const [autenticato, setAutenticato] = useState(false);
-const [passwordInput, setPasswordInput] = useState('');
 
-useEffect(() => {
-  const salvata = sessionStorage.getItem('auth_ok');
-  if (salvata === '1') setAutenticato(true);
-}, []);
+  // 1. HOOK PASSWORD - AGGIUNTA
+  const [autenticato, setAutenticato] = useState(false);
+  const [passwordInput, setPasswordInput] = useState('');
 
-function checkPassword() {
-  if (passwordInput === 'sottosassa') { // cambia qui la password
-    sessionStorage.setItem('auth_ok', '1');
-    setAutenticato(true);
-  } else {
-    alert('Password errata');
-  }
-}
+  // 1. useEffect PASSWORD - AGGIUNTA
+  useEffect(() => {
+    const salvata = sessionStorage.getItem('auth_ok');
+    if (salvata === '1') setAutenticato(true);
+  }, []);
 
-if (!autenticato) {
-  return (
-    <div className="login-overlay">
-      <div className="login-box">
-        <h2>Accesso riservato</h2>
-        <input 
-          type="password" 
-          placeholder="Inserisci password"
-          value={passwordInput}
-          onChange={(e) => setPasswordInput(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && checkPassword()}
-        />
-        <button onClick={checkPassword}>Entra</button>
-      </div>
-    </div>
-  );
-}
   useEffect(() => {
     loadReservations();
   }, []);
 
   async function loadReservations() {
     const { data } = await supabase
-      .from('reservations')
-      .select('*')
-      .order('date')
-      .order('time');
+     .from('reservations')
+     .select('*')
+     .order('date')
+     .order('time');
 
     if (data) {
       setReservations(data);
     }
   }
 
-   async function saveReservation() {
-    if (!form.name || !form.people) return;
+  async function saveReservation() {
+    if (!form.name ||!form.people) return;
 
-    // Costruiamo il payload con i tipi di dati corretti per Supabase
     const payload = {
       name: form.name,
-      people: parseInt(form.people, 10), // Converte in numero (int4)
-      tables: form.tables || null,       // Mantiene testo (es. "10,11") o mette null se vuoto
+      people: parseInt(form.people, 10),
+      tables: form.tables || null,
       time: form.time,
-      note: form.note || null,           // Testo o null se vuoto
+      note: form.note || null,
       date: selectedDate,
     };
 
-    if (editingId !== null) {
-      // In fase di modifica NON inviamo 'accommodated: false' per non resettare lo stato
+    if (editingId!== null) {
       await supabase
-        .from('reservations')
-        .update(payload)
-        .eq('id', editingId);
+       .from('reservations')
+       .update(payload)
+       .eq('id', editingId);
 
       setReservations(
         reservations.map((r) =>
-          r.id === editingId ? { ...r, ...payload } : r
+          r.id === editingId? {...r,...payload } : r
         )
       );
     } else {
-      // In fase di inserimento aggiungiamo lo stato iniziale
-      const payloadNuovo = { ...payload, accommodated: false };
+      const payloadNuovo = {...payload, accommodated: false };
 
       const { data, error } = await supabase
-        .from('reservations')
-        .insert([payloadNuovo])
-        .select();
+       .from('reservations')
+       .insert([payloadNuovo])
+       .select();
 
       if (error) {
         console.error("Errore Supabase:", error.message);
@@ -196,42 +176,44 @@ if (!autenticato) {
     });
   }
 
- async function deleteReservation(id) {
+  // 2. CONFERMA ELIMINA - MODIFICATO
+  async function deleteReservation(id) {
+    const conferma = window.confirm('Sei sicuro di voler eliminare questa prenotazione?');
+    if (!conferma) return;
 
-  await supabase
-    .from('reservations')
-    .delete()
-    .eq('id', id);
+    await supabase
+     .from('reservations')
+     .delete()
+     .eq('id', id);
 
-  loadReservations();
+    loadReservations();
 
-  setReservations(
-    reservations.filter((r) => r.id !== id)
-  );
-}
+    setReservations(
+      reservations.filter((r) => r.id!== id)
+    );
+  }
 
   async function toggleAccommodated(reservation) {
+    await supabase
+     .from('reservations')
+     .update({
+        accommodated:!reservation.accommodated,
+      })
+     .eq('id', reservation.id);
 
-  await supabase
-    .from('reservations')
-    .update({
-      accommodated: !reservation.accommodated,
-    })
-    .eq('id', reservation.id);
+    loadReservations();
 
-  loadReservations();
-
-  setReservations(
-    reservations.map((r) =>
-      r.id === reservation.id
-        ? {
-            ...r,
-            accommodated: !r.accommodated,
-          }
-        : r
-    )
-  );
-}
+    setReservations(
+      reservations.map((r) =>
+        r.id === reservation.id
+         ? {
+             ...r,
+              accommodated:!r.accommodated,
+            }
+          : r
+      )
+    );
+  }
 
   function exportBackup() {
     const data = JSON.stringify(reservations, null, 2);
@@ -258,24 +240,34 @@ if (!autenticato) {
     const [table, time] = over.id.split('|');
 
     await supabase
-      .from('reservations')
-      .update({
+     .from('reservations')
+     .update({
         tables: table,
         time,
       })
-      .eq('id', reservationId);
+     .eq('id', reservationId);
 
     setReservations(
       reservations.map((r) =>
         r.id === reservationId
-          ? {
-              ...r,
+         ? {
+             ...r,
               tables: table,
               time,
             }
           : r
       )
     );
+  }
+
+  // 1. FUNZIONE PASSWORD - AGGIUNTA
+  function checkPassword() {
+    if (passwordInput === 'sottosassa') { // CAMBIA QUI LA PASSWORD
+      sessionStorage.setItem('auth_ok', '1');
+      setAutenticato(true);
+    } else {
+      alert('Password errata');
+    }
   }
 
   const filteredReservations = reservations.filter(
@@ -287,26 +279,44 @@ if (!autenticato) {
     0
   );
 
-function reservationsForCell(table, time) {
-  return filteredReservations.filter((r) => {
+  function reservationsForCell(table, time) {
+    return filteredReservations.filter((r) => {
+      const reservationTables = r.tables
+       ? r.tables.split(',').map((t) => t.trim())
+        : [];
 
-    const reservationTables = r.tables
-      ? r.tables.split(',').map((t) => t.trim())
-      : [];
+      if (!reservationTables.includes(String(table))) {
+        return false;
+      }
 
-    if (!reservationTables.includes(String(table))) {
-      return false;
-    }
+      const startIndex = times.indexOf(r.time);
+      const currentIndex = times.indexOf(time);
 
-    const startIndex = times.indexOf(r.time);
-    const currentIndex = times.indexOf(time);
+      return (
+        currentIndex >= startIndex &&
+        currentIndex < startIndex + 6
+      );
+    });
+  }
 
+  // 1. BLOCCO LOGIN - AGGIUNTA - DEVE STARE DOPO TUTTI GLI HOOK
+  if (!autenticato) {
     return (
-      currentIndex >= startIndex &&
-      currentIndex < startIndex + 6
+      <div className="login-overlay">
+        <div className="login-box">
+          <h2>Accesso riservato</h2>
+          <input
+            type="password"
+            placeholder="Inserisci password"
+            value={passwordInput}
+            onChange={(e) => setPasswordInput(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && checkPassword()}
+          />
+          <button onClick={checkPassword}>Entra</button>
+        </div>
+      </div>
     );
-  });
-}
+  }
 
   return (
     <div style={{ padding: 20 }}>
@@ -339,7 +349,7 @@ function reservationsForCell(table, time) {
             placeholder="Nome"
             value={form.name}
             onChange={(e) =>
-              setForm({ ...form, name: e.target.value })
+              setForm({...form, name: e.target.value })
             }
           />
 
@@ -348,7 +358,7 @@ function reservationsForCell(table, time) {
             placeholder="Persone"
             value={form.people}
             onChange={(e) =>
-              setForm({ ...form, people: e.target.value })
+              setForm({...form, people: e.target.value })
             }
           />
 
@@ -356,20 +366,20 @@ function reservationsForCell(table, time) {
             placeholder="Tavoli es. 10,11"
             value={form.tables}
             onChange={(e) =>
-              setForm({ ...form, tables: e.target.value })
+              setForm({...form, tables: e.target.value })
             }
           />
-  <input
-  placeholder="Note"
-  value={form.note}
-  onChange={(e) =>
-    setForm({ ...form, note: e.target.value })
-  }
-/>
+          <input
+            placeholder="Note"
+            value={form.note}
+            onChange={(e) =>
+              setForm({...form, note: e.target.value })
+            }
+          />
           <select
             value={form.time}
             onChange={(e) =>
-              setForm({ ...form, time: e.target.value })
+              setForm({...form, time: e.target.value })
             }
           >
             {times.map((t) => (
@@ -378,7 +388,7 @@ function reservationsForCell(table, time) {
           </select>
 
           <button onClick={saveReservation}>
-            {editingId ? 'Salva' : 'Aggiungi'}
+            {editingId? 'Salva' : 'Aggiungi'}
           </button>
         </div>
       </div>
@@ -434,7 +444,7 @@ function reservationsForCell(table, time) {
                 <td>{r.tables || '-'}</td>
                 <td>
                   {r.accommodated
-                    ? 'accommodated'
+                   ? 'accommodated'
                     : 'In attesa'}
                 </td>
 
@@ -472,21 +482,33 @@ function reservationsForCell(table, time) {
       </div>
 
       <DndContext onDragEnd={handleDragEnd}>
+        {/* 5. WRAPPER CON SCROLL + STICKY - MODIFICATO */}
         <div
           style={{
-            overflowX: 'auto',
+            overflow: 'auto',
+            maxHeight: '80vh',
             background: '#fff',
             padding: 20,
             borderRadius: 10,
           }}
         >
-          <table>
-            <thead>
+          <table style={{ borderCollapse: 'collapse' }}>
+            <thead style={{ position: 'sticky', top: 0, background: '#fff', zIndex: 10 }}>
               <tr>
-                <th>Tavolo</th>
+                <th style={{
+                  position: 'sticky',
+                  left: 0,
+                  background: '#fff',
+                  zIndex: 11,
+                  border: '1px solid #ddd'
+                }}>
+                  Tavolo
+                </th>
 
                 {times.map((time) => (
-                  <th key={time}>{time}</th>
+                  <th key={time} style={{ border: '1px solid #ddd', padding: '4px' }}>
+                    {time}
+                  </th>
                 ))}
               </tr>
             </thead>
@@ -494,7 +516,13 @@ function reservationsForCell(table, time) {
             <tbody>
               {tables.map((table) => (
                 <tr key={table}>
-                  <td>
+                  <td style={{
+                    position: 'sticky',
+                    left: 0,
+                    background: '#fff',
+                    border: '1px solid #ddd',
+                    fontWeight: 600
+                  }}>
                     <strong>{table}</strong>
                   </td>
 
