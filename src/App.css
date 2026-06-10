@@ -224,21 +224,6 @@
   background: #2563eb;
 }
 .riga-accomodata td {
-  background-color: #dcfce7 !important;
-  text-decoration: line-through !important;
-  opacity: 0.7 !important;
-  color: #166534 !important;
-}
-
-.riga-accomodata td:first-child {
-  border-left: 4px solid #22c55e !important;
-}
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-table td, table th {
-  border: 1px solid #ddd;
-  padding: 8px;
+  background: #dcfce7;
+  color: #16a34a;
 }
