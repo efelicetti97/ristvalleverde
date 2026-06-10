@@ -23,45 +23,43 @@ const tables = [
 ];
 
 function DraggableReservation({ reservation }) {
-  // Se non è il blocco iniziale, non è trascinabile
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: reservation.id,
-    disabled: !reservation.isStartBlock, // BLOCCA IL DRAG
   });
 
   const style = transform
-    ? {
+   ? {
         transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
       }
     : undefined;
 
   let bg = '#fde68a';
-  if (reservation.accommodated) bg = '#86efac';
-  if (Number(reservation.people) >= 6) bg = '#fca5a5';
 
-  // Se non è il blocco iniziale, cursore normale e opacità ridotta
-  const cursorStyle = reservation.isStartBlock ? {} : { cursor: 'default', opacity: 0.7 };
+  if (reservation.accommodated) {
+    bg = '#86efac';
+  }
+
+  if (Number(reservation.people) >= 6) {
+    bg = '#fca5a5';
+  }
 
   return (
     <div
       ref={setNodeRef}
-      className={reservation.accommodated ? 'prenotazione-accomodata' : ''}
+      className={reservation.accommodated? 'prenotazione-accomodata' : ''} // 4. AGGIUNTA CLASSE
       style={{
-        ...style,
-        ...cursorStyle,
+       ...style,
         background: bg,
         padding: 6,
         borderRadius: 6,
         marginBottom: 4,
         fontSize: 12,
-        border: reservation.isStartBlock ? '2px solid #f59e0b' : 'none' // Bordo al primo blocco
       }}
-      {...(reservation.isStartBlock ? listeners : {})}
-      {...(reservation.isStartBlock ? attributes : {})}
+      {...listeners}
+      {...attributes}
     >
       <strong>{reservation.name}</strong>
       <div>{reservation.people} persone</div>
-      {reservation.isStartBlock && <div style={{fontSize: 10}}>↔ Trascina</div>}
     </div>
   );
 }
@@ -232,44 +230,35 @@ export default function App() {
     a.click();
   }
 
- async function handleDragEnd(event) {
-  const { active, over } = event;
-  if (!over) return;
+  async function handleDragEnd(event) {
+    const { active, over } = event;
 
-  const reservationId = active.id;
-  const [newTable, newTime] = over.id.split('|');
-  
-  // Trova la prenotazione originale
-  const reservation = reservations.find(r => r.id === reservationId);
-  if (!reservation) return;
-  
-  // Se l'ora è diversa, annulla il drop
-  if (reservation.time !== newTime) {
-    console.log('Non puoi cambiare orario, solo tavolo');
-    return; // Blocca il cambio
+    if (!over) return;
+
+    const reservationId = active.id;
+
+    const [table, time] = over.id.split('|');
+
+    await supabase
+     .from('reservations')
+     .update({
+        tables: table,
+        time,
+      })
+     .eq('id', reservationId);
+
+    setReservations(
+      reservations.map((r) =>
+        r.id === reservationId
+         ? {
+             ...r,
+              tables: table,
+              time,
+            }
+          : r
+      )
+    );
   }
-
-  // Aggiorna solo il tavolo, lascia l'ora originale
-  await supabase
-    .from('reservations')
-    .update({
-      tables: newTable,
-      // NIENTE time qui
-    })
-    .eq('id', reservationId);
-
-  setReservations(
-    reservations.map((r) =>
-      r.id === reservationId
-        ? {
-            ...r,
-            tables: newTable,
-            // time resta quello originale: r.time
-          }
-        : r
-    )
-  );
-}
 
   // 1. FUNZIONE PASSWORD - AGGIUNTA
   function checkPassword() {
@@ -291,27 +280,24 @@ export default function App() {
   );
 
   function reservationsForCell(table, time) {
-  return filteredReservations.filter((r) => {
-    const reservationTables = r.tables
-      ? r.tables.split(',').map((t) => t.trim())
-      : [];
+    return filteredReservations.filter((r) => {
+      const reservationTables = r.tables
+       ? r.tables.split(',').map((t) => t.trim())
+        : [];
 
-    if (!reservationTables.includes(String(table))) {
-      return false;
-    }
+      if (!reservationTables.includes(String(table))) {
+        return false;
+      }
 
-    const startIndex = times.indexOf(r.time);
-    const currentIndex = times.indexOf(time);
+      const startIndex = times.indexOf(r.time);
+      const currentIndex = times.indexOf(time);
 
-    return (
-      currentIndex >= startIndex &&
-      currentIndex < startIndex + 6
-    );
-  }).map(r => ({
-    ...r,
-    isStartBlock: r.time === time // TRUE solo se è il primo blocco
-  }));
-}
+      return (
+        currentIndex >= startIndex &&
+        currentIndex < startIndex + 6
+      );
+    });
+  }
 
   // 1. BLOCCO LOGIN - AGGIUNTA - DEVE STARE DOPO TUTTI GLI HOOK
   if (!autenticato) {
