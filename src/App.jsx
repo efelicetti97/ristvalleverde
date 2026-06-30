@@ -8,6 +8,11 @@ const supabaseKey = 'sb_publishable_S6ELxV6XfMkKkfNTwwFy_Q_fFdBF6oI';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 const times = [
+  // Pranzo
+  '12:00','12:15','12:30','12:45',
+  '13:00','13:15','13:30','13:45',
+
+  // Cena
   '18:00','18:15','18:30','18:45',
   '19:00','19:15','19:30','19:45',
   '20:00','20:15','20:30','20:45',
